@@ -39,40 +39,8 @@ terraform {
   }
 }
 
-provider "vault" {
-  # approle
-
-  auth_login {
-    path      = "auth/approle/login"
-    namespace = "admin"
-
-    parameters = {
-      role_id   = var.role_id
-      secret_id = var.secret_id
-    }
-  }
-}
-
-data "vault_aws_access_credentials" "creds" {
-  backend = "aws/"
-  role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
-  type    = "sts"          # creds
-}
-
-provider "aws" {
-  region     = local.region
-  token      = data.vault_aws_access_credentials.creds.security_token
-  access_key = data.vault_aws_access_credentials.creds.access_key
-  secret_key = data.vault_aws_access_credentials.creds.secret_key
-}
-
-provider "hcp" {
-  client_id     = var.hcp_client_id
-  client_secret = var.hcp_client_secret
-}
-
 locals {
-  name   = "postgresql-demo"
+  name   = "postgresqldemo"
   region = "us-west-2"
   tags = {
     Owner       = "user"
@@ -80,158 +48,142 @@ locals {
   }
 }
 
-################################################################################
-# Supporting Resources
-################################################################################
+# provider "hcp" {
+#   client_id     = var.hcp_client_id
+#   client_secret = var.hcp_client_secret
+# }
 
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 3.0"
+# resource "hcp_hvn" "demo" {
+#   hvn_id         = "demo-hvn"
+#   cloud_provider = "aws"
+#   region         = "us-west-2"
+#   cidr_block     = "172.25.16.0/20"
+# }
 
-  name = local.name
-  cidr = "10.99.0.0/18"
+# resource "hcp_vault_cluster" "demo" {
+#   cluster_id = "vault-cluster-demo"
+#   hvn_id     = hcp_hvn.demo.hvn_id
+#   tier       = "dev"
+#   public_endpoint = true
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }
 
-  azs              = ["${local.region}a", "${local.region}b", "${local.region}c"]
-  public_subnets   = ["10.99.0.0/24", "10.99.1.0/24", "10.99.2.0/24"]
-  private_subnets  = ["10.99.3.0/24", "10.99.4.0/24", "10.99.5.0/24"]
-  database_subnets = ["10.99.7.0/24", "10.99.8.0/24", "10.99.9.0/24"]
+# resource "hcp_vault_cluster_admin_token" "demo" {
+#   cluster_id = hcp_vault_cluster.demo.cluster_id
+# }
 
-  create_database_subnet_group       = true
-  create_database_subnet_route_table = true
+# resource "hcp_aws_network_peering" "demo" {
+#   peering_id      = "peer-demo"
+#   hvn_id          = hcp_hvn.demo.hvn_id
+#   peer_vpc_id     = module.vpc.vpc_id
+#   peer_account_id = module.vpc.vpc_owner_id
+#   peer_vpc_region = local.region
+# }
 
-  tags = local.tags
-}
+# // This data source is the same as the resource above, but waits for the connection to be Active before returning.
+# data "hcp_aws_network_peering" "demo" {
+#   hvn_id                = hcp_hvn.demo.hvn_id
+#   peering_id            = hcp_aws_network_peering.demo.peering_id
+#   wait_for_active_state = true
+# }
 
-module "security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 4.0"
+# // Accept the VPC peering within your AWS account.
+# resource "aws_vpc_peering_connection_accepter" "peer" {
+#   vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
+#   auto_accept               = true
+# }
 
-  name        = local.name
-  description = "Complete PostgreSQL example security group"
-  vpc_id      = module.vpc.vpc_id
+# // Create an HVN route that targets your HCP network peering and matches your AWS VPC's CIDR block.
+# // The route depends on the data source, rather than the resource, to ensure the peering is in an Active state.
+# resource "hcp_hvn_route" "demo" {
+#   hvn_link         = hcp_hvn.demo.self_link
+#   hvn_route_id     = "peering-route"
+#   destination_cidr = module.vpc.vpc_cidr_block
+#   target_link      = data.hcp_aws_network_peering.demo.self_link
+# }
 
-  # ingress
-  ingress_with_cidr_blocks = [
-    {
-      from_port   = 5432
-      to_port     = 5432
-      protocol    = "tcp"
-      description = "PostgreSQL access from within VPC"
-      cidr_blocks = join(",", flatten([module.vpc.vpc_cidr_block, data.hcp_hvn.demo.cidr_block]))
-    },
-  ]
+# ######################################
+# provider "vault" {
+#   # approle
 
-  tags = local.tags
-}
+#   auth_login {
+#     path      = "auth/approle/login"
+#     namespace = "admin"
 
-################################################################################
-# RDS Module
-################################################################################
+#     parameters = {
+#       role_id   = var.role_id
+#       secret_id = var.secret_id
+#     }
+#   }
+# }
 
-module "db" {
-  source = "terraform-aws-modules/rds/aws"
+# data "vault_aws_access_credentials" "creds" {
+#   backend = "aws/"
+#   role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
+#   type    = "sts"          # creds
+# }
 
-  identifier = local.name
+# provider "aws" {
+#   region     = local.region
+#   token      = data.vault_aws_access_credentials.creds.security_token
+#   access_key = data.vault_aws_access_credentials.creds.access_key
+#   secret_key = data.vault_aws_access_credentials.creds.secret_key
+# }
 
-  # All available versions: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
-  engine               = "postgres"
-  engine_version       = "14.1"
-  family               = "postgres14" # DB parameter group
-  major_engine_version = "14"         # DB option group
-  instance_class       = "db.t4g.large"
+# ################################################################################
+# # Supporting Resources
+# ################################################################################
 
-  allocated_storage     = 20
-  max_allocated_storage = 100
+# module "vpc" {
+#   source  = "terraform-aws-modules/vpc/aws"
+#   version = "~> 3.0"
 
-  # NOTE: Do NOT use 'user' as the value for 'username' as it throws:
-  # "Error creating DB Instance: InvalidParameterValue: MasterUsername
-  # user cannot be used as it is a reserved word used by the engine"
-  db_name  = "demopostgresqldb"
-  username = "vaultuser"
-  password = "vaultpass"
-  port     = 5432
+#   name = local.name
+#   cidr = "10.99.0.0/18"
 
-  multi_az               = true
-  db_subnet_group_name   = module.vpc.database_subnet_group
-  vpc_security_group_ids = [module.security_group.security_group_id]
+#   azs              = ["${local.region}a", "${local.region}b", "${local.region}c"]
+#   public_subnets   = ["10.99.0.0/24", "10.99.1.0/24", "10.99.2.0/24"]
+#   private_subnets  = ["10.99.3.0/24", "10.99.4.0/24", "10.99.5.0/24"]
+#   database_subnets = ["10.99.7.0/24", "10.99.8.0/24", "10.99.9.0/24"]
 
-  maintenance_window              = "Mon:00:00-Mon:03:00"
-  backup_window                   = "03:00-06:00"
-  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
-  create_cloudwatch_log_group     = true
+#   create_database_subnet_group       = true
+#   create_database_subnet_route_table = true
 
-  backup_retention_period = 0
-  skip_final_snapshot     = true
-  deletion_protection     = false
+#   tags = local.tags
+# }
 
-  performance_insights_enabled          = true
-  performance_insights_retention_period = 7
-  create_monitoring_role                = true
-  monitoring_interval                   = 60
-  monitoring_role_name                  = "example-monitoring-role-name"
-  monitoring_role_description           = "Description for monitoring role"
+# module "security_group" {
+#   source  = "terraform-aws-modules/security-group/aws"
+#   version = "~> 4.0"
 
-  parameters = [
-    {
-      name  = "autovacuum"
-      value = 1
-    },
-    {
-      name  = "client_encoding"
-      value = "utf8"
-    }
-  ]
+#   name        = local.name
+#   description = "Complete PostgreSQL example security group"
+#   vpc_id      = module.vpc.vpc_id
 
-  tags = local.tags
-  db_option_group_tags = {
-    "Sensitive" = "low"
-  }
-  db_parameter_group_tags = {
-    "Sensitive" = "low"
-  }
-}
+#   # ingress
+#   ingress_with_cidr_blocks = [
+#     {
+#       from_port   = 5432
+#       to_port     = 5432
+#       protocol    = "tcp"
+#       description = "PostgreSQL access from within VPC"
+#       cidr_blocks = join(",", flatten([module.vpc.vpc_cidr_block, hcp_hvn.demo.cidr_block]))
+#     },
+#   ]
 
-data "hcp_hvn" "demo" {
-  hvn_id = "hvn"
-}
+#   tags = local.tags
+# }
 
-resource "hcp_aws_network_peering" "demo" {
-  peering_id      = "peer-demo"
-  hvn_id          = data.hcp_hvn.demo.hvn_id
-  peer_vpc_id     = module.vpc.vpc_id
-  peer_account_id = module.vpc.vpc_owner_id
-  peer_vpc_region = local.region
-}
+# ################################################################################
+# # RDS Module
+# ################################################################################
 
-// This data source is the same as the resource above, but waits for the connection to be Active before returning.
-data "hcp_aws_network_peering" "demo" {
-  hvn_id                = data.hcp_hvn.demo.hvn_id
-  peering_id            = hcp_aws_network_peering.demo.peering_id
-  wait_for_active_state = true
-}
-
-// Accept the VPC peering within your AWS account.
-resource "aws_vpc_peering_connection_accepter" "peer" {
-  vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
-  auto_accept               = true
-}
-
-// Create an HVN route that targets your HCP network peering and matches your AWS VPC's CIDR block.
-// The route depends on the data source, rather than the resource, to ensure the peering is in an Active state.
-resource "hcp_hvn_route" "demo" {
-  hvn_link         = data.hcp_hvn.demo.self_link
-  hvn_route_id     = "peering-route"
-  destination_cidr = module.vpc.vpc_cidr_block
-  target_link      = data.hcp_aws_network_peering.demo.self_link
-}
-
-# module "db_default" {
+# module "db" {
 #   source = "terraform-aws-modules/rds/aws"
 
-#   identifier = "${local.name}-default"
-
-#   create_db_option_group    = false
-#   create_db_parameter_group = false
+#   identifier = local.name
 
 #   # All available versions: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
 #   engine               = "postgres"
@@ -240,31 +192,53 @@ resource "hcp_hvn_route" "demo" {
 #   major_engine_version = "14"         # DB option group
 #   instance_class       = "db.t4g.large"
 
-#   allocated_storage = 20
+#   allocated_storage     = 20
+#   max_allocated_storage = 100
 
 #   # NOTE: Do NOT use 'user' as the value for 'username' as it throws:
 #   # "Error creating DB Instance: InvalidParameterValue: MasterUsername
 #   # user cannot be used as it is a reserved word used by the engine"
-#   db_name  = "demo-postgresql-db"
+#   db_name  = "demopostgresqldb"
 #   username = "vaultuser"
+#   password = "vaultpass"
 #   port     = 5432
 
+#   multi_az               = true
 #   db_subnet_group_name   = module.vpc.database_subnet_group
 #   vpc_security_group_ids = [module.security_group.security_group_id]
 
-#   maintenance_window      = "Mon:00:00-Mon:03:00"
-#   backup_window           = "03:00-06:00"
+#   maintenance_window              = "Mon:00:00-Mon:03:00"
+#   backup_window                   = "03:00-06:00"
+#   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+#   create_cloudwatch_log_group     = true
+
 #   backup_retention_period = 0
+#   skip_final_snapshot     = true
+#   deletion_protection     = false
+
+#   performance_insights_enabled          = true
+#   performance_insights_retention_period = 7
+#   create_monitoring_role                = true
+#   monitoring_interval                   = 60
+#   monitoring_role_name                  = "example-monitoring-role-name"
+#   monitoring_role_description           = "Description for monitoring role"
+
+#   parameters = [
+#     {
+#       name  = "autovacuum"
+#       value = 1
+#     },
+#     {
+#       name  = "client_encoding"
+#       value = "utf8"
+#     }
+#   ]
 
 #   tags = local.tags
-# }
-
-# module "db_disabled" {
-#   source = "terraform-aws-modules/rds/aws"
-
-#   identifier = "${local.name}-disabled"
-
-#   create_db_instance        = false
-#   create_db_parameter_group = false
-#   create_db_option_group    = false
+#   db_option_group_tags = {
+#     "Sensitive" = "low"
+#   }
+#   db_parameter_group_tags = {
+#     "Sensitive" = "low"
+#   }
 # }
