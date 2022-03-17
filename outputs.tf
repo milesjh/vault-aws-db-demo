@@ -1,14 +1,14 @@
-# output "hcp_vault_token" {
-#   value = hcp_vault_cluster_admin_token.demo.token
-# }
+output "hcp_vault_token" {
+  value = hcp_vault_cluster_admin_token.demo.token
+}
 
-# output "hcp_vault_public_url" {
-#   value = hcp_vault_cluster.demo.vault_public_endpoint_url
-# }
+output "hcp_vault_public_url" {
+  value = hcp_vault_cluster.demo.vault_public_endpoint_url
+}
 
-# output "hcp_vault_private_url" {
-#   value = hcp_vault_cluster.demo.vault_private_endpoint_url
-# }
+output "hcp_vault_private_url" {
+  value = hcp_vault_cluster.demo.vault_private_endpoint_url
+}
 
 # output "db_instance_endpoint" {
 #   description = "The connection endpoint"
