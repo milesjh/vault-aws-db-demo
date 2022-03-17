@@ -26,6 +26,7 @@ jobs:
       with:
         url: https://vault-cluster.vault.ee09d6e6-8a4a-4c0e-8184-1bd48b08fd1e.aws.hashicorp.cloud:8200
         # token: ${{ secrets.VaultToken }}
+        namespace: admin
         method: approle
         roleId: ${{ secrets.roleId }}
         secretId: ${{ secrets.secretId }}
