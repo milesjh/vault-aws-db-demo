@@ -1,5 +1,6 @@
 output "hcp_vault_token" {
-  value = hcp_vault_cluster_admin_token.demo.token
+  value     = hcp_vault_cluster_admin_token.demo.token
+  sensitive = true
 }
 
 output "hcp_vault_public_url" {
