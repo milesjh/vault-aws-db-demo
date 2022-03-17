@@ -152,7 +152,7 @@ module "vpc" {
   database_subnets = ["10.99.7.0/24", "10.99.8.0/24", "10.99.9.0/24"]
 
   manage_default_route_table = true
-  default_route_table_name = "default-vpc-rt"
+  default_route_table_name   = "default-vpc-rt"
   default_route_table_routes = [
     {
       cidr_block                = hcp_hvn.demo.cidr_block
