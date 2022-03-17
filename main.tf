@@ -52,7 +52,7 @@ provider "vault" {
 
 data "vault_aws_access_credentials" "creds" {
   backend = "aws/"
-  role    = "rds-admin-user" #rds-admin-ft, rds-admin-ar
+  role    = "rds-admin-ar" #rds-admin-ft, rds-admin-ar
 }
 
 provider "aws" {
