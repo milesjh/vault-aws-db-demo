@@ -53,26 +53,53 @@ provider "hcp" {
   client_secret = var.hcp_client_secret
 }
 
-# resource "hcp_hvn" "demo" {
-#   hvn_id         = "demo-hvn"
-#   cloud_provider = "aws"
-#   region         = "us-west-2"
-#   cidr_block     = "172.25.16.0/20"
-# }
+# provider "vault" {
+#   # approle
 
-# resource "hcp_vault_cluster" "demo" {
-#   cluster_id = "vault-cluster-demo"
-#   hvn_id     = hcp_hvn.demo.hvn_id
-#   tier       = "dev"
-#   public_endpoint = true
-#   lifecycle {
-#     prevent_destroy = true
+#   auth_login {
+#     path      = "auth/approle/login"
+#     namespace = "admin"
+
+#     parameters = {
+#       role_id   = var.role_id
+#       secret_id = var.secret_id
+#     }
 #   }
 # }
 
-# resource "hcp_vault_cluster_admin_token" "demo" {
-#   cluster_id = hcp_vault_cluster.demo.cluster_id
+# data "vault_aws_access_credentials" "creds" {
+#   backend = "aws/"
+#   role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
+#   type    = "sts"          # creds
 # }
+
+# provider "aws" {
+#   region     = local.region
+#   token      = data.vault_aws_access_credentials.creds.security_token
+#   access_key = data.vault_aws_access_credentials.creds.access_key
+#   secret_key = data.vault_aws_access_credentials.creds.secret_key
+# }
+
+resource "hcp_hvn" "demo" {
+  hvn_id         = "demo-hvn"
+  cloud_provider = "aws"
+  region         = "us-west-2"
+  cidr_block     = "172.25.16.0/20"
+}
+
+resource "hcp_vault_cluster" "demo" {
+  cluster_id      = "vault-cluster-demo"
+  hvn_id          = hcp_hvn.demo.hvn_id
+  tier            = "dev"
+  public_endpoint = true
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "hcp_vault_cluster_admin_token" "demo" {
+  cluster_id = hcp_vault_cluster.demo.cluster_id
+}
 
 # resource "hcp_aws_network_peering" "demo" {
 #   peering_id      = "peer-demo"
@@ -104,33 +131,6 @@ provider "hcp" {
 #   target_link      = data.hcp_aws_network_peering.demo.self_link
 # }
 
-# ######################################
-provider "vault" {
-  # approle
-
-  auth_login {
-    path      = "auth/approle/login"
-    namespace = "admin"
-
-    parameters = {
-      role_id   = var.role_id
-      secret_id = var.secret_id
-    }
-  }
-}
-
-data "vault_aws_access_credentials" "creds" {
-  backend = "aws/"
-  role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
-  type    = "sts"          # creds
-}
-
-provider "aws" {
-  region     = local.region
-  token      = data.vault_aws_access_credentials.creds.security_token
-  access_key = data.vault_aws_access_credentials.creds.access_key
-  secret_key = data.vault_aws_access_credentials.creds.secret_key
-}
 
 # ################################################################################
 # # Supporting Resources
