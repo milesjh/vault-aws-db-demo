@@ -37,9 +37,10 @@ terraform {
 
 provider "vault" {
   # approle
-  namespace = "admin"
+  
   auth_login {
     path = "auth/approle/login"
+    namespace = "admin"
 
     parameters = {
       role_id   = var.role_id
