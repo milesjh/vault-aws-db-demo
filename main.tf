@@ -52,13 +52,15 @@ provider "vault" {
 
 data "vault_aws_access_credentials" "creds" {
   backend = "aws/"
-  role    = "rds-admin-ar" #rds-admin-ft, rds-admin-ar
+  role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
+  type    = "sts"          # creds
 }
 
 provider "aws" {
-  region     = local.region
-  access_key = data.vault_aws_access_credentials.creds.access_key
-  secret_key = data.vault_aws_access_credentials.creds.secret_key
+  region = local.region
+  token  = data.vault_aws_access_credentials.creds.security_token
+  # access_key = data.vault_aws_access_credentials.creds.access_key
+  # secret_key = data.vault_aws_access_credentials.creds.secret_key
 }
 
 locals {
