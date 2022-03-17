@@ -151,6 +151,13 @@ module "vpc" {
   private_subnets  = ["10.99.3.0/24", "10.99.4.0/24", "10.99.5.0/24"]
   database_subnets = ["10.99.7.0/24", "10.99.8.0/24", "10.99.9.0/24"]
 
+  default_route_table_routes = [
+    {
+      cidr_block                = hcp_hvn.demo.cidr_block
+      vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
+    }
+  ]
+
   create_database_subnet_group       = true
   create_database_subnet_route_table = true
 
