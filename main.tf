@@ -90,7 +90,7 @@ resource "hcp_hvn" "demo" {
 resource "hcp_vault_cluster" "demo" {
   cluster_id      = "vault-cluster-demo"
   hvn_id          = hcp_hvn.demo.hvn_id
-  tier            = "dev"
+  tier            = "starter-small"
   public_endpoint = true
   lifecycle {
     prevent_destroy = true
@@ -202,7 +202,7 @@ module "db" {
   engine_version       = "14.1"
   family               = "postgres14" # DB parameter group
   major_engine_version = "14"         # DB option group
-  instance_class       = "db.t4g.large"
+  instance_class       = "db.t4g.micro"
 
   allocated_storage     = 20
   max_allocated_storage = 100
