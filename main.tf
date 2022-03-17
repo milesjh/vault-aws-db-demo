@@ -1,15 +1,7 @@
-# TFC Hook
-# Single Vault Node
-# AWS RDS DB
-
 # Vault Configs
-## Dev Mode should be fine
-## Azure AD Auth Method
 ## AWS Dynamic Creds from Vault
-### Root Creds from Doormat??
-### Federated Token AND Assumed Role
+### Federated Token & Assumed Role
 ## AWS RDS Dynamic Creds from Vault
-### Root Creds manually input
 
 
 terraform {
@@ -90,10 +82,10 @@ resource "hcp_hvn" "demo" {
 resource "hcp_vault_cluster" "demo" {
   cluster_id      = "vault-cluster-demo"
   hvn_id          = hcp_hvn.demo.hvn_id
-  tier            = "starter_small"
+  tier            = "dev"
   public_endpoint = true
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
