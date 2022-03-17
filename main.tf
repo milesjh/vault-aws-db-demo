@@ -159,7 +159,7 @@ module "vpc" {
   ]
 
   create_database_subnet_group       = true
-  create_database_subnet_route_table = true
+  create_database_subnet_route_table = false
 
   tags = local.tags
 }
