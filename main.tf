@@ -205,7 +205,7 @@ module "db" {
   username            = "vaultuser"
   password            = "vaultpass"
   port                = 5432
-  publicly_accessible = true
+  publicly_accessible = false
 
   multi_az               = true
   db_subnet_group_name   = module.vpc.database_subnet_group
