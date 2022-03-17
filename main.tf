@@ -90,7 +90,7 @@ resource "hcp_hvn" "demo" {
 resource "hcp_vault_cluster" "demo" {
   cluster_id      = "vault-cluster-demo"
   hvn_id          = hcp_hvn.demo.hvn_id
-  tier            = "starter"
+  tier            = "dev"
   public_endpoint = true
   lifecycle {
     prevent_destroy = true
