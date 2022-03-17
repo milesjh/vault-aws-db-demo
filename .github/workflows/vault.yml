@@ -1,0 +1,42 @@
+### GitHub Actions for Vault Secrets
+# https://github.com/marketplace/actions/vault-secrets
+
+name: 'Vault'
+
+on:
+  workflow_run:
+    workflows: [Terraform]
+    types:
+      - completed
+
+jobs:    
+  vault:
+    name: 'Vault'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Import Secrets
+      uses: hashicorp/vault-action@v2.3.1
+      with:
+        url: ${{ secrets.vaultUrl }}
+        # token: ${{ secrets.VaultToken }}
+        method: approle
+        roleId: ${{ secrets.roleId }}
+        secretId: ${{ secrets.secretId }}
+        # caCertificate: ${{ secrets.VAULTCA }}
+        secrets: |
+          database/creds/postgresql-admin username | PGSQL_USERNAME;
+          database/creds/postgresql-admin password | PGSQL_PASSWORD;
+
+        # aws access_key | AWS_ACCESS_KEY_ID ;
+        # aws secret_key | AWS_SECRET_ACCESS_KEY ;
+        # aws security_token | AWS_SESSION_TOKEN;
+
+    - name: Retrieve Secrets
+      run: export PGSQL_USERNAME; export PGSQL_PASSWORD;
