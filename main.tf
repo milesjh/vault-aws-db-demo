@@ -37,9 +37,9 @@ terraform {
 
 provider "vault" {
   # approle
-  
+
   auth_login {
-    path = "auth/approle/login"
+    path      = "auth/approle/login"
     namespace = "admin"
 
     parameters = {
