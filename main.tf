@@ -48,10 +48,10 @@ locals {
   }
 }
 
-# provider "hcp" {
-#   client_id     = var.hcp_client_id
-#   client_secret = var.hcp_client_secret
-# }
+provider "hcp" {
+  client_id     = var.hcp_client_id
+  client_secret = var.hcp_client_secret
+}
 
 # resource "hcp_hvn" "demo" {
 #   hvn_id         = "demo-hvn"
@@ -105,32 +105,32 @@ locals {
 # }
 
 # ######################################
-# provider "vault" {
-#   # approle
+provider "vault" {
+  # approle
 
-#   auth_login {
-#     path      = "auth/approle/login"
-#     namespace = "admin"
+  auth_login {
+    path      = "auth/approle/login"
+    namespace = "admin"
 
-#     parameters = {
-#       role_id   = var.role_id
-#       secret_id = var.secret_id
-#     }
-#   }
-# }
+    parameters = {
+      role_id   = var.role_id
+      secret_id = var.secret_id
+    }
+  }
+}
 
-# data "vault_aws_access_credentials" "creds" {
-#   backend = "aws/"
-#   role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
-#   type    = "sts"          # creds
-# }
+data "vault_aws_access_credentials" "creds" {
+  backend = "aws/"
+  role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
+  type    = "sts"          # creds
+}
 
-# provider "aws" {
-#   region     = local.region
-#   token      = data.vault_aws_access_credentials.creds.security_token
-#   access_key = data.vault_aws_access_credentials.creds.access_key
-#   secret_key = data.vault_aws_access_credentials.creds.secret_key
-# }
+provider "aws" {
+  region     = local.region
+  token      = data.vault_aws_access_credentials.creds.security_token
+  access_key = data.vault_aws_access_credentials.creds.access_key
+  secret_key = data.vault_aws_access_credentials.creds.secret_key
+}
 
 # ################################################################################
 # # Supporting Resources
