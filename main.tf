@@ -16,14 +16,14 @@ terraform {
   required_version = ">= 1.4"
 
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4"
-    }
-    vault = {
-      source  = "hashicorp/vault"
-      version = "~> 3"
-    }
+    # aws = {
+    #   source  = "hashicorp/aws"
+    #   version = "~> 4"
+    # }
+    # vault = {
+    #   source  = "hashicorp/vault"
+    #   version = "~> 3"
+    # }
     hcp = {
       source  = "hashicorp/hcp"
       version = "~> 0.56"
@@ -45,32 +45,32 @@ provider "hcp" {
   client_secret = var.hcp_client_secret
 }
 
-provider "vault" {
-  # approle
+# provider "vault" {
+#   # approle
 
-  auth_login {
-    path      = "auth/approle/login"
-    namespace = "admin"
+#   auth_login {
+#     path      = "auth/approle/login"
+#     namespace = "admin"
 
-    parameters = {
-      role_id   = var.role_id
-      secret_id = var.secret_id
-    }
-  }
-}
+#     parameters = {
+#       role_id   = var.role_id
+#       secret_id = var.secret_id
+#     }
+#   }
+# }
 
-data "vault_aws_access_credentials" "creds" {
-  backend = "aws/"
-  role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
-  type    = "sts"          # creds
-}
+# data "vault_aws_access_credentials" "creds" {
+#   backend = "aws/"
+#   role    = "rds-admin-ar" # rds-admin-ft, rds-admin-user
+#   type    = "sts"          # creds
+# }
 
-provider "aws" {
-  region     = local.region
-  token      = data.vault_aws_access_credentials.creds.security_token
-  access_key = data.vault_aws_access_credentials.creds.access_key
-  secret_key = data.vault_aws_access_credentials.creds.secret_key
-}
+# provider "aws" {
+#   region     = local.region
+#   token      = data.vault_aws_access_credentials.creds.security_token
+#   access_key = data.vault_aws_access_credentials.creds.access_key
+#   secret_key = data.vault_aws_access_credentials.creds.secret_key
+# }
 
 resource "hcp_hvn" "demo" {
   hvn_id         = "demo-hvn"
@@ -101,62 +101,62 @@ resource "hcp_aws_network_peering" "demo" {
   peer_vpc_region = local.region
 }
 
-// This data source is the same as the resource above, but waits for the connection to be Active before returning.
-data "hcp_aws_network_peering" "demo" {
-  hvn_id                = hcp_hvn.demo.hvn_id
-  peering_id            = hcp_aws_network_peering.demo.peering_id
-  wait_for_active_state = true
-}
+# // This data source is the same as the resource above, but waits for the connection to be Active before returning.
+# data "hcp_aws_network_peering" "demo" {
+#   hvn_id                = hcp_hvn.demo.hvn_id
+#   peering_id            = hcp_aws_network_peering.demo.peering_id
+#   wait_for_active_state = true
+# }
 
-// Accept the VPC peering within your AWS account.
-resource "aws_vpc_peering_connection_accepter" "peer" {
-  vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
-  auto_accept               = true
-}
+# // Accept the VPC peering within your AWS account.
+# resource "aws_vpc_peering_connection_accepter" "peer" {
+#   vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
+#   auto_accept               = true
+# }
 
-// Create an HVN route that targets your HCP network peering and matches your AWS VPC's CIDR block.
-// The route depends on the data source, rather than the resource, to ensure the peering is in an Active state.
-resource "hcp_hvn_route" "demo" {
-  hvn_link         = hcp_hvn.demo.self_link
-  hvn_route_id     = "peering-route"
-  destination_cidr = module.vpc.vpc_cidr_block
-  target_link      = data.hcp_aws_network_peering.demo.self_link
-}
-
-
-################################################################################
-# Supporting Resources
-################################################################################
-
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 3.0"
-
-  name                 = local.name
-  cidr                 = "10.99.0.0/18"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+# // Create an HVN route that targets your HCP network peering and matches your AWS VPC's CIDR block.
+# // The route depends on the data source, rather than the resource, to ensure the peering is in an Active state.
+# resource "hcp_hvn_route" "demo" {
+#   hvn_link         = hcp_hvn.demo.self_link
+#   hvn_route_id     = "peering-route"
+#   destination_cidr = module.vpc.vpc_cidr_block
+#   target_link      = data.hcp_aws_network_peering.demo.self_link
+# }
 
 
-  azs              = ["${local.region}a", "${local.region}b", "${local.region}c"]
-  public_subnets   = ["10.99.0.0/24", "10.99.1.0/24", "10.99.2.0/24"]
-  private_subnets  = ["10.99.3.0/24", "10.99.4.0/24", "10.99.5.0/24"]
-  database_subnets = ["10.99.7.0/24", "10.99.8.0/24", "10.99.9.0/24"]
+# ################################################################################
+# # Supporting Resources
+# ################################################################################
 
-  manage_default_route_table = true
-  default_route_table_name   = "default-vpc-rt"
-  default_route_table_routes = [
-    {
-      cidr_block                = hcp_hvn.demo.cidr_block
-      vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
-    }
-  ]
+# module "vpc" {
+#   source  = "terraform-aws-modules/vpc/aws"
+#   version = "~> 3.0"
 
-  create_database_subnet_group       = true
-  create_database_subnet_route_table = false
+#   name                 = local.name
+#   cidr                 = "10.99.0.0/18"
+#   enable_dns_hostnames = true
+#   enable_dns_support   = true
 
-  tags = local.tags
-}
+
+#   azs              = ["${local.region}a", "${local.region}b", "${local.region}c"]
+#   public_subnets   = ["10.99.0.0/24", "10.99.1.0/24", "10.99.2.0/24"]
+#   private_subnets  = ["10.99.3.0/24", "10.99.4.0/24", "10.99.5.0/24"]
+#   database_subnets = ["10.99.7.0/24", "10.99.8.0/24", "10.99.9.0/24"]
+
+#   manage_default_route_table = true
+#   default_route_table_name   = "default-vpc-rt"
+#   default_route_table_routes = [
+#     {
+#       cidr_block                = hcp_hvn.demo.cidr_block
+#       vpc_peering_connection_id = hcp_aws_network_peering.demo.provider_peering_id
+#     }
+#   ]
+
+#   create_database_subnet_group       = true
+#   create_database_subnet_route_table = false
+
+#   tags = local.tags
+# }
 
 # module "security_group" {
 #   source  = "terraform-aws-modules/security-group/aws"
