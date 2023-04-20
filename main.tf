@@ -93,13 +93,13 @@ resource "hcp_vault_cluster_admin_token" "demo" {
   cluster_id = hcp_vault_cluster.demo.cluster_id
 }
 
-resource "hcp_aws_network_peering" "demo" {
-  peering_id      = "peer-demo"
-  hvn_id          = hcp_hvn.demo.hvn_id
-  peer_vpc_id     = module.vpc.vpc_id
-  peer_account_id = module.vpc.vpc_owner_id
-  peer_vpc_region = local.region
-}
+# resource "hcp_aws_network_peering" "demo" {
+#   peering_id      = "peer-demo"
+#   hvn_id          = hcp_hvn.demo.hvn_id
+#   peer_vpc_id     = module.vpc.vpc_id
+#   peer_account_id = module.vpc.vpc_owner_id
+#   peer_vpc_region = local.region
+# }
 
 # // This data source is the same as the resource above, but waits for the connection to be Active before returning.
 # data "hcp_aws_network_peering" "demo" {
